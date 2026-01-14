@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    /* Rose Pine Moon - Adjusted for Dashboard Contrast */
+    --bg-base: #232136;
+    --bg-surface: #2a273f; /* Card Background */
+    --bg-highlight: #393552; /* Card Hover */
+    --text-main: #e0def4;
+    --text-muted: #908caa;
+    --color-accent: #c4a7e7;
+    --color-highlight: #ea9a97;
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    /* Dotted background pattern for that dashboard feel */
+    background-image: radial-gradient(var(--bg-surface) 1px, transparent 1px);
+    background-size: 24px 24px;
+}
+
+/* Scrollbar hiding for clean UI */
+::-webkit-scrollbar {
+    width: 0px;
+    background: transparent;
+}
