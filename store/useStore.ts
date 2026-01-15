@@ -8,7 +8,7 @@ export const useStore = create<AppState>()(
   persist(
     (set) => ({
       use24h: true,
-      showWeather: false, // Default off per De-prioritized note, but implemented
+      showWeather: false,
       showSeconds: false,
       showGreeting: true,
       userName: "Traveler",
@@ -45,6 +45,16 @@ export const useStore = create<AppState>()(
         set((state) => ({
           shortcuts: state.shortcuts.filter((s) => s.id !== id),
         })),
+
+      // 👇 NEW ACTION 👇
+      reorderShortcuts: (fromIndex: number, toIndex: number) =>
+        set((state) => {
+          const newList = [...state.shortcuts];
+          const [movedItem] = newList.splice(fromIndex, 1);
+          newList.splice(toIndex, 0, movedItem);
+          return { shortcuts: newList };
+        }),
+      // 👆 END NEW ACTION 👆
 
       setHasSeenBangHint: () =>
         set((state) => ({

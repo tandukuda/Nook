@@ -1,19 +1,20 @@
 "use client";
 import { useState } from "react";
 import { useStore } from "@/store/useStore";
-import {
-  Plus,
-  MoreHorizontal,
-  Trash2,
-  Edit2,
-  ExternalLink,
-} from "lucide-react";
+import { Plus, MoreHorizontal, Trash2, GripHorizontal } from "lucide-react";
 import { Shortcut } from "@/lib/types";
 
 export default function Shortcuts() {
-  const { shortcuts, addShortcut, editShortcut, removeShortcut } = useStore();
+  const {
+    shortcuts,
+    addShortcut,
+    editShortcut,
+    removeShortcut,
+    reorderShortcuts,
+  } = useStore();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Form State
   const [title, setTitle] = useState("");
@@ -42,6 +43,29 @@ export default function Shortcuts() {
     setIsModalOpen(false);
   };
 
+  // --- Drag and Drop Logic (Attached to Handle) ---
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = "move";
+    // Make the ghost image transparent or default
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
+    reorderShortcuts(draggedIndex, targetIndex);
+    setDraggedIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex justify-between items-center mb-4 px-1">
@@ -55,30 +79,48 @@ export default function Shortcuts() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {shortcuts.map((shortcut) => (
+        {shortcuts.map((shortcut, index) => (
           <div
             key={shortcut.id}
-            className="group relative bg-surface hover:bg-highlight/20 border border-white/5 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-1 hover:shadow-xl flex flex-col gap-3"
+            onDragOver={(e) => handleDragOver(e, index)}
+            onDrop={(e) => handleDrop(e, index)}
+            className={`
+              group relative bg-surface border border-white/5 rounded-2xl p-4 transition-all duration-200 flex flex-col gap-3
+              ${draggedIndex === index ? "opacity-40 ring-2 ring-accent border-transparent scale-95" : "hover:bg-highlight/20 hover:-translate-y-1 hover:shadow-xl"}
+            `}
           >
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start z-20 relative">
               {/* Icon Container */}
-              <div className="h-12 w-12 rounded-xl bg-base flex items-center justify-center text-2xl shadow-inner">
+              <div className="h-12 w-12 rounded-xl bg-base flex items-center justify-center text-2xl shadow-inner pointer-events-none select-none">
                 {shortcut.icon || "🔗"}
               </div>
-              {/* Context Menu Trigger */}
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  openModal(shortcut);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-main"
-              >
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
+
+              <div className="flex gap-1">
+                {/* DRAG HANDLE - Only this is draggable */}
+                <div
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragEnd={handleDragEnd}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-accent cursor-grab active:cursor-grabbing transition-opacity"
+                  title="Drag to reorder"
+                >
+                  <GripHorizontal className="h-4 w-4" />
+                </div>
+
+                {/* Edit Menu */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openModal(shortcut);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-muted hover:text-main cursor-pointer transition-opacity"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
-            <div>
-              {/* 👇 UPDATED: Added target="_blank" and rel="noopener noreferrer" 👇 */}
+            <div className="z-10 relative">
               <a
                 href={shortcut.url}
                 target="_blank"
@@ -87,13 +129,13 @@ export default function Shortcuts() {
               >
                 {shortcut.title}
               </a>
-              <span className="text-xs text-muted truncate block opacity-50">
+              <span className="text-xs text-muted truncate block opacity-50 select-none">
                 {new URL(shortcut.url).hostname}
               </span>
             </div>
 
-            {/* Fake Status Dot */}
-            <div className="absolute bottom-4 right-4 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+            {/* Status Dot */}
+            <div className="absolute bottom-4 right-4 h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] pointer-events-none"></div>
           </div>
         ))}
       </div>

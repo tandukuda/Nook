@@ -47,4 +47,5 @@ export interface AppState {
   editShortcut: (id: string, data: Partial<Shortcut>) => void;
   removeShortcut: (id: string) => void;
   setHasSeenBangHint: () => void;
+  reorderShortcuts: (fromIndex: number, toIndex: number) => void;
 }
