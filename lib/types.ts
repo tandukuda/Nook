@@ -18,6 +18,14 @@ export interface ThemeColors {
   accent: string | null;
 }
 
+// Type-safe preference keys
+export type PreferenceKey =
+  | "use24h"
+  | "showWeather"
+  | "showSeconds"
+  | "showGreeting"
+  | "userName";
+
 export interface AppState {
   // Preferences
   use24h: boolean;
@@ -40,8 +48,8 @@ export interface AppState {
     hasSeenBangHint: boolean;
   };
 
-  // Actions
-  setPreference: (key: keyof AppState, value: any) => void;
+  // Actions - Now type-safe!
+  setPreference: <K extends PreferenceKey>(key: K, value: AppState[K]) => void;
   updateTheme: (colors: Partial<ThemeColors>) => void;
   addShortcut: (shortcut: Omit<Shortcut, "id">) => void;
   editShortcut: (id: string, data: Partial<Shortcut>) => void;

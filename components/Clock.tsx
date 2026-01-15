@@ -21,6 +21,7 @@ export default function Clock() {
   const format = (num: number) => num.toString().padStart(2, "0");
   let hours = time.getHours();
   const minutes = format(time.getMinutes());
+  const seconds = format(time.getSeconds());
 
   if (!use24h) hours = hours % 12 || 12;
 
@@ -35,6 +36,9 @@ export default function Clock() {
       <div>
         <h1 className="text-5xl font-bold text-main tracking-tight mb-2">
           {format(hours)}:{minutes}
+          {showSeconds && (
+            <span className="text-3xl text-muted/60">:{seconds}</span>
+          )}
         </h1>
         <p className="text-muted font-medium">{dateStr}</p>
       </div>

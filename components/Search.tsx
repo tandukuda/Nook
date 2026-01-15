@@ -4,15 +4,36 @@ import { useStore } from "@/store/useStore";
 import { Search as SearchIcon, HelpCircle } from "lucide-react";
 
 export default function Search() {
-  const { searchEngines, setHasSeenBangHint } = useStore();
+  const { searchEngines, setHasSeenBangHint, onboarding } = useStore();
   const [query, setQuery] = useState("");
   const [currentEngineIndex, setCurrentEngineIndex] = useState(0);
   const [showHelp, setShowHelp] = useState(false);
+  const [showBangToast, setShowBangToast] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto-focus on page load
   useEffect(() => {
     inputRef.current?.focus();
+  }, []);
+
+  // Global keyboard handler - restore focus when typing
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      // If not focused on input and user types a letter/number
+      if (
+        document.activeElement !== inputRef.current &&
+        document.activeElement?.tagName !== "INPUT" &&
+        document.activeElement?.tagName !== "TEXTAREA" &&
+        e.key.length === 1 &&
+        !e.ctrlKey &&
+        !e.metaKey
+      ) {
+        inputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
   }, []);
 
   // Find configured default
@@ -27,13 +48,24 @@ export default function Search() {
     // Tab: Cycle engines
     if (e.key === "Tab") {
       e.preventDefault();
-      setCurrentEngineIndex((prev) => (prev + 1) % searchEngines.length);
+      if (e.shiftKey) {
+        // Shift+Tab: Go backwards
+        setCurrentEngineIndex(
+          (prev) => (prev - 1 + searchEngines.length) % searchEngines.length,
+        );
+      } else {
+        // Tab: Go forwards
+        setCurrentEngineIndex((prev) => (prev + 1) % searchEngines.length);
+      }
     }
 
     // Escape: Clear or Blur
     if (e.key === "Escape") {
-      if (query) setQuery("");
-      else inputRef.current?.blur();
+      if (query) {
+        setQuery("");
+      } else {
+        inputRef.current?.blur();
+      }
     }
 
     // Enter: Submit
@@ -54,6 +86,13 @@ export default function Search() {
     const bangEngine = searchEngines.find((e) => e.bang === potentialBang);
 
     if (bangEngine) {
+      // Show celebration toast on first bang usage
+      if (!onboarding.hasSeenBangHint) {
+        setShowBangToast(true);
+        setTimeout(() => setShowBangToast(false), 3000);
+        setHasSeenBangHint();
+      }
+
       const searchTerms = parts.slice(1).join(" ");
       // Prefix-based instant redirect
       if (!searchTerms) {
@@ -64,7 +103,6 @@ export default function Search() {
         // Query search (e.g., "!yt cat" -> youtube.com/results?q=cat)
         window.location.href = `${bangEngine.url}${encodeURIComponent(searchTerms)}`;
       }
-      setHasSeenBangHint(); // Mark onboarding as seen
     } else {
       // Standard search
       window.location.href = `${activeEngine.url}${encodeURIComponent(query)}`;
@@ -107,7 +145,7 @@ export default function Search() {
 
       {/* Popover for bangs */}
       {showHelp && (
-        <div className="absolute top-16 right-0 bg-surface border border-muted/20 p-4 rounded-lg shadow-xl w-64 animate-in fade-in slide-in-from-top-2">
+        <div className="absolute top-16 right-0 bg-surface border border-muted/20 p-4 rounded-lg shadow-xl w-64 animate-in fade-in slide-in-from-top-2 z-50">
           <h3 className="text-sm font-bold text-accent mb-2">
             Available Bangs
           </h3>
@@ -123,6 +161,13 @@ export default function Search() {
                 </li>
               ))}
           </ul>
+        </div>
+      )}
+
+      {/* First-time bang usage toast */}
+      {showBangToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-accent text-base px-6 py-3 rounded-xl shadow-2xl font-bold animate-in slide-in-from-bottom-4 z-50">
+          🎉 Nice! You discovered bangs
         </div>
       )}
     </div>
